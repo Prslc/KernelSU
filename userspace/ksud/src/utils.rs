@@ -8,6 +8,7 @@ use std::{
     },
     path::Path,
     process::Command,
+    sync::OnceLock,
 };
 
 use crate::{assets, boot_patch, defs, ksucalls, module, restorecon};
