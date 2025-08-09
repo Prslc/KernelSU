@@ -76,7 +76,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             val isManager = Natives.becomeManager(ksuApp.packageName)
             val ksuVersion = if (isManager) Natives.version else null
             val lkmMode = ksuVersion?.let {
-                if (it >= Natives.MINIMAL_SUPPORTED_KERNEL_LKM && kernelVersion.isGKI()) Natives.isLkmMode else null
+                if (it >= Natives.MINIMAL_SUPPORTED_KERNEL_LKM) Natives.isLkmMode else null
             }
 
             StatusCard(kernelVersion, ksuVersion, lkmMode) {
