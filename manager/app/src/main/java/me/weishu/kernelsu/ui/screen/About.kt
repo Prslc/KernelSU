@@ -64,7 +64,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
         id = R.string.about_source_code,
         "<b><a href=\"https://github.com/tiann/KernelSU\">GitHub</a></b>",
         "<b><a href=\"https://t.me/KernelSU\">Telegram</a></b>"
-    )
+    ).replace("<br/>", "\n")
     val result = extractLinks(htmlString)
 
     Scaffold(
