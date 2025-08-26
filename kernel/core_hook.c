@@ -129,6 +129,10 @@ static void disable_seccomp()
 #ifdef CONFIG_SECCOMP
 	current->seccomp.mode = 0;
 	current->seccomp.filter = NULL;
+// https://elixir.bootlin.com/linux/v5.9-rc1/source/include/linux/seccomp.h
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+	atomic_set(&current->seccomp.filter_count, 0);
+#endif
 #else
 #endif
 }
