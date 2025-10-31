@@ -571,6 +571,7 @@ static void do_stop_input_hook(struct work_struct *work)
 	unregister_kprobe(&input_event_kp);
 }
 #endif
+#endif
 
 static void stop_vfs_read_hook()
 {
