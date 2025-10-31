@@ -9,7 +9,9 @@
 #include "linux/lsm_audit.h"
 #include "xfrm.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 #define SELINUX_POLICY_INSTEAD_SELINUX_SS
+#endif
 
 #define KERNEL_SU_DOMAIN "su"
 #define KERNEL_SU_FILE "ksu_file"
@@ -19,24 +21,29 @@
 static struct policydb *get_policydb(void)
 {
 	struct policydb *db;
-	struct selinux_policy *policy = selinux_state.policy;
+// selinux_state does not exists before 4.19
+#ifdef KSU_COMPAT_USE_SELINUX_STATE
+#ifdef SELINUX_POLICY_INSTEAD_SELINUX_SS
+	struct selinux_policy *policy = rcu_dereference(selinux_state.policy);
 	db = &policy->policydb;
+#else
+	struct selinux_ss *ss = rcu_dereference(selinux_state.ss);
+	db = &ss->policydb;
+#endif
+#else
+	db = &policydb;
+#endif
 	return db;
 }
 
-static DEFINE_MUTEX(ksu_rules);
-
 void apply_kernelsu_rules()
 {
-	struct policydb *db;
-
 	if (!getenforce()) {
 		pr_info("SELinux permissive or disabled, apply rules!\n");
 	}
 
-	mutex_lock(&ksu_rules);
-
-	db = get_policydb();
+	rcu_read_lock();
+	struct policydb *db = get_policydb();
 
 	ksu_permissive(db, KERNEL_SU_DOMAIN);
 	ksu_typeattribute(db, KERNEL_SU_DOMAIN, "mlstrustedsubject");
@@ -123,11 +130,11 @@ void apply_kernelsu_rules()
 	// Allow all binder transactions
 	ksu_allow(db, ALL, KERNEL_SU_DOMAIN, "binder", ALL);
 
-	// Allow system server kill su process
-	ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
-	ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
+    // Allow system server kill su process
+    ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
+    ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
 
-	mutex_unlock(&ksu_rules);
+	rcu_read_unlock();
 }
 
 #define MAX_SEPOL_LEN 128
@@ -174,7 +181,8 @@ static int get_object(char *buf, char __user *user_object, size_t buf_sz,
 // reset avc cache table, otherwise the new rules will not take effect if already denied
 static void reset_avc_cache()
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
+#if ((!defined(KSU_COMPAT_USE_SELINUX_STATE)) || \
+        LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 	avc_ss_reset(0);
 	selnl_notify_policyload(0);
 	selinux_status_update_policyload(0);
@@ -189,8 +197,6 @@ static void reset_avc_cache()
 
 int handle_sepolicy(unsigned long arg3, void __user *arg4)
 {
-	struct policydb *db;
-
 	if (!arg4) {
 		return -1;
 	}
@@ -208,9 +214,9 @@ int handle_sepolicy(unsigned long arg3, void __user *arg4)
 	u32 cmd = data.cmd;
 	u32 subcmd = data.subcmd;
 
-	mutex_lock(&ksu_rules);
+	rcu_read_lock();
 
-	db = get_policydb();
+	struct policydb *db = get_policydb();
 
 	int ret = -1;
 	if (cmd == CMD_NORMAL_PERM) {
@@ -460,7 +466,7 @@ int handle_sepolicy(unsigned long arg3, void __user *arg4)
 	}
 
 exit:
-	mutex_unlock(&ksu_rules);
+	rcu_read_unlock();
 
 	// only allow and xallow needs to reset avc cache, but we cannot do that because
 	// we are in atomic context. so we just reset it every time.

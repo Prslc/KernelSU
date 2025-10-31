@@ -1,4 +1,3 @@
-#include <linux/capability.h>
 #include <linux/compiler.h>
 #include <linux/fs.h>
 #include <linux/gfp.h>
@@ -8,7 +7,9 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 #include <linux/compiler_types.h>
+#endif
 
 #include "ksu.h"
 #include "klog.h" // IWYU pragma: keep
@@ -63,14 +64,12 @@ static void remove_uid_from_arr(uid_t uid)
 
 static void init_default_profiles()
 {
-	kernel_cap_t full_cap = CAP_FULL_SET;
-
 	default_root_profile.uid = 0;
 	default_root_profile.gid = 0;
 	default_root_profile.groups_count = 1;
 	default_root_profile.groups[0] = 0;
-	memcpy(&default_root_profile.capabilities.effective, &full_cap,
-		sizeof(default_root_profile.capabilities.effective));
+	memset(&default_root_profile.capabilities, 0xff,
+	       sizeof(default_root_profile.capabilities));
 	default_root_profile.namespaces = 0;
 	strcpy(default_root_profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
 
@@ -111,7 +110,6 @@ void ksu_show_allow_list(void)
 static void ksu_grant_root_to_shell()
 {
 	struct app_profile profile = {
-		.version = KSU_APP_PROFILE_VER,
 		.allow_su = true,
 		.current_uid = 2000,
 	};
@@ -151,6 +149,11 @@ static inline bool forbid_system_uid(uid_t uid) {
 static bool profile_valid(struct app_profile *profile)
 {
 	if (!profile) {
+		return false;
+	}
+
+	if (forbid_system_uid(profile->current_uid)) {
+		pr_err("uid lower than 2000 is unsupported: %d\n", profile->current_uid);
 		return false;
 	}
 
