@@ -183,22 +183,6 @@ void ksu_seccomp_clear_cache(struct seccomp_filter *filter, int nr)
 #endif
 }
 
-void ksu_seccomp_allow_cache(struct seccomp_filter *filter, int nr)
-{
-    if (!filter) {
-        return;
-    }
-
-    if (nr >= 0 && nr < SECCOMP_ARCH_NATIVE_NR) {
-        set_bit(nr, filter->cache.allow_native);
-    }
-
-#ifdef SECCOMP_ARCH_COMPAT
-    if (nr >= 0 && nr < SECCOMP_ARCH_COMPAT_NR) {
-        set_bit(nr, filter->cache.allow_compat);
-    }
-#endif
-}
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 				   long count)
@@ -232,3 +216,20 @@ long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 	return ret;
 }
 #endif
+
+void ksu_seccomp_allow_cache(struct seccomp_filter *filter, int nr)
+{
+    if (!filter) {
+        return;
+    }
+
+    if (nr >= 0 && nr < SECCOMP_ARCH_NATIVE_NR) {
+        set_bit(nr, filter->cache.allow_native);
+    }
+
+#ifdef SECCOMP_ARCH_COMPAT
+    if (nr >= 0 && nr < SECCOMP_ARCH_COMPAT_NR) {
+        set_bit(nr, filter->cache.allow_compat);
+    }
+#endif
+}
