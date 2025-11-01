@@ -177,7 +177,7 @@ long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 }
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 struct action_cache {
     DECLARE_BITMAP(allow_native, SECCOMP_ARCH_NATIVE_NR);
 #ifdef SECCOMP_ARCH_COMPAT
@@ -195,7 +195,7 @@ struct seccomp_filter {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
     bool wait_killable_recv;
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
     struct action_cache cache;
 #endif
     struct seccomp_filter *prev;
@@ -212,7 +212,7 @@ static inline void ksu_seccomp_clear_cache(struct seccomp_filter *filter, int nr
     if (!filter)
         return;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
     if (nr >= 0 && nr < SECCOMP_ARCH_NATIVE_NR)
         clear_bit(nr, filter->cache.allow_native);
 
@@ -228,7 +228,7 @@ static inline void ksu_seccomp_allow_cache(struct seccomp_filter *filter, int nr
     if (!filter)
         return;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
     if (nr >= 0 && nr < SECCOMP_ARCH_NATIVE_NR)
         set_bit(nr, filter->cache.allow_native);
 
