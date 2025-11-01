@@ -2,6 +2,7 @@ name: Build Manager only
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
 
