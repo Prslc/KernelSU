@@ -344,9 +344,8 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct pt_regs *real_regs = PT_REAL_REGS(regs);
-	int option = (int)PT_REGS_PARM1(real_regs);
-	unsigned long arg2 = (unsigned long)PT_REGS_PARM2(real_regs);
-	unsigned long arg3 = (unsigned long)PT_REGS_PARM3(real_regs);
+	int magic1 = (int)PT_REGS_PARM1(real_regs);
+	int magic2 = (int)PT_REGS_PARM2(real_regs);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
 	// PRCTL_SYMBOL is the arch-specificed one, which receive raw pt_regs from syscall
 	unsigned long arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
@@ -355,8 +354,6 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
 	// https://elixir.bootlin.com/linux/v4.15.18/source/arch/x86/entry/common.c#L287
 	unsigned long arg4 = (unsigned long)PT_REGS_CCALL_PARM4(real_regs);
 #endif
-	unsigned long arg5 = (unsigned long)PT_REGS_PARM5(real_regs);
-
     // Check if this is a request to install KSU fd
     if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
         int fd = ksu_install_fd();
